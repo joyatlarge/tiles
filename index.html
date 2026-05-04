@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Are.na Canvas</title>
+<title>Joy at Large</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -22,16 +22,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Pl
 #msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:40px;}
 .loading{font-size:11px;letter-spacing:0.1em;color:var(--dim);animation:blink 1.8s ease-in-out infinite;}
 @keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
-#picker{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-#pinner{width:420px;max-height:80vh;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--surface);}
-#pinner::-webkit-scrollbar{width:4px;}
-#pinner::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-#phdr{padding:16px 20px 12px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
-.crow{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:12px;}
-.crow:last-child{border-bottom:none;}
-.crow:hover{background:rgba(255,255,255,0.03);}
-.cn{color:var(--text);}
-.cm{color:var(--dim);font-size:10px;}
 .block{position:absolute;cursor:grab;user-select:none;border:1px solid var(--border);border-radius:4px;background:var(--surface);max-width:230px;opacity:0;animation:fi 0.4s ease forwards;}
 @keyframes fi{to{opacity:1;}}
 .block:hover{border-color:var(--bh);}
@@ -47,63 +37,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Pl
 </head>
 <body>
 <div id="topbar">
-  <div id="tl"><span id="logo">⬡</span><span id="clabel">joy-ryan</span></div>
+  <div id="tl"><span id="logo">⬡</span><span id="clabel">joy at large</span></div>
   <div id="tr">
     <span id="bcount"></span>
-    <button class="btn" id="backbtn" style="display:none" onclick="goBack()">← channels</button>
     <button class="btn" id="scatbtn" style="display:none" onclick="scatter()">scatter</button>
   </div>
 </div>
 <div id="canvas"><div id="msg"><span class="loading">connecting…</span></div></div>
 <script>
-var USER='joy-ryan';
+var SLUG='joy-at-large';
 var zMax=10,drag=null,ox=0,oy=0;
 var canvas=document.getElementById('canvas');
 function rnd(a,b){return Math.floor(Math.random()*(b-a))+a;}
 function showMsg(h){canvas.innerHTML='<div id="msg">'+h+'</div>';}
 
-async function api(path){
-  var res=await fetch('/.netlify/functions/arena?path='+encodeURIComponent(path));
-  if(!res.ok)throw new Error(res.status);
-  return res.json();
-}
-
-async function loadChannels(){
-  showMsg('<span class="loading">connecting to are.na…</span>');
-  document.getElementById('backbtn').style.display='none';
-  document.getElementById('scatbtn').style.display='none';
-  document.getElementById('bcount').textContent='';
-  document.getElementById('clabel').textContent='joy-ryan';
-  try{
-    var data=await api('/users/'+USER+'/channels?per=50');
-    var channels=data.channels||data.data||[];
-    canvas.innerHTML='';
-    var picker=document.createElement('div');picker.id='picker';
-    var inner=document.createElement('div');inner.id='pinner';
-    var hdr=document.createElement('div');hdr.id='phdr';
-    hdr.textContent=channels.length+' channels — pick one';
-    inner.appendChild(hdr);
-    channels.forEach(function(ch){
-      var row=document.createElement('div');row.className='crow';
-      var count=(ch.counts&&ch.counts.contents)||ch.length||0;
-      row.innerHTML='<span class="cn">'+(ch.title||ch.slug||'Untitled')+'</span><span class="cm">'+count+' blocks</span>';
-      row.onclick=function(){loadChannel(ch.slug||ch.id,ch.title);};
-      inner.appendChild(row);
-    });
-    picker.appendChild(inner);canvas.appendChild(picker);
-  }catch(err){
-    showMsg('<span style="color:#c06060;font-size:11px">Could not load channels.<br><span style="color:#444;font-size:10px">'+err.message+'</span></span>');
-  }
-}
-
-async function loadChannel(slug,title){
+async function load(){
   showMsg('<span class="loading">loading blocks…</span>');
-  document.getElementById('clabel').textContent=title||slug;
-  document.getElementById('backbtn').style.display='inline-block';
-  document.getElementById('scatbtn').style.display='none';
-  document.getElementById('bcount').textContent='';
   try{
-    var data=await api('/channels/'+slug+'?per=50');
+    var res=await fetch('/.netlify/functions/arena?path='+encodeURIComponent('/channels/'+SLUG+'?per=50'));
+    var data=await res.json();
     var items=data.contents||data.data||[];
     canvas.innerHTML='';
     document.getElementById('bcount').textContent=items.length+' blocks';
@@ -111,7 +63,7 @@ async function loadChannel(slug,title){
     items.sort(function(){return Math.random()-0.5;});
     items.forEach(function(b,i){setTimeout(function(){makeBlock(b,i);},i*30);});
   }catch(err){
-    showMsg('<span style="color:#c06060">Could not load channel.</span>');
+    showMsg('<span style="color:#c06060;font-size:11px">Could not load blocks.<br><span style="color:#444;font-size:10px">'+err.message+'</span></span>');
   }
 }
 
@@ -168,8 +120,7 @@ function scatter(){
     setTimeout(function(){el.style.transition='';},450);
   });
 }
-function goBack(){loadChannels();}
-loadChannels();
+load();
 </script>
 </body>
 </html>
