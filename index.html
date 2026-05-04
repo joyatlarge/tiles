@@ -3,70 +3,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Joy at Large</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<title>Tiles</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
 :root{
-  --paper:#f5f0e8;
-  --paper-dark:#ede8dc;
-  --ink:#2c2416;
-  --ink-light:#8c7d6a;
-  --ink-dim:#b8a898;
-  --border:#d4c9b8;
-  --accent:#8b6f47;
-  --accent-light:#c4a882;
-  --sidebar:220px;
-  --topbar:48px;
+  --paper:#f4ede0;
+  --paper-2:#ede4d3;
+  --paper-3:#e8dfc8;
+  --ink:#2a1f0e;
+  --ink-mid:#7a6a52;
+  --ink-dim:#b09a7a;
+  --accent:#8b6030;
 }
 
 html,body{
   height:100%;
+  width:100%;
+  overflow:hidden;
   background:var(--paper);
-  color:var(--ink);
   font-family:'DM Mono',monospace;
+  cursor:default;
+}
+
+/* linen texture */
+#stage{
+  position:fixed;
+  inset:0;
+  background-color:var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 32px,rgba(160,130,90,0.06) 32px,rgba(160,130,90,0.06) 33px),
+    repeating-linear-gradient(90deg,transparent,transparent 32px,rgba(160,130,90,0.04) 32px,rgba(160,130,90,0.04) 33px);
   overflow:hidden;
 }
 
-/* paper grain overlay */
-body::before{
+/* grain */
+#stage::after{
   content:'';
-  position:fixed;
+  position:absolute;
   inset:0;
   pointer-events:none;
-  z-index:9000;
-  opacity:0.04;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size:200px;
+  opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:300px;
 }
 
-/* subtle linen texture via repeating gradient */
-#canvas-wrap{
-  background-color:var(--paper);
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 28px,
-      rgba(180,160,130,0.07) 28px,
-      rgba(180,160,130,0.07) 29px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 28px,
-      rgba(180,160,130,0.04) 28px,
-      rgba(180,160,130,0.04) 29px
-    );
-}
-
-/* TOPBAR */
-#topbar{
+/* back button — barely visible */
+#back{
   position:fixed;
-  top:0;left:0;right:0;
-  height:var(--topbar);
-  background:rgba(245,240,232,0.95);
+  bottom:24px;
+  left:24px;
+  font-size:10px;
+  letter-spacing:0.1em;
+  color:var(--ink-dim);
+  cursor:pointer;
+  z-index:500;
+  display:none;
+  padding:6px 10px;
+  border:1px solid rgba(160,130,90,0.25);
+  border-radius:2px;
+  background:rgba(244,237,224,0.8);
+  backdrop-filter:blur(4px);
+  transition:color 0.15s,border-color 0.15s;
+}
+#back:hover{color:var(--ink-mid);border-color:rgba(160,130,90,0.5);}
+
+/* tile count */
+#info{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  font-size:9px;
+  letter-spacing:0.12em;
+  color:var(--ink-dim);
+  z-index:500;
+  display:none;
+}
+
+/* BOARD SCRAPS */
+.board-scrap{
+  position:absolute;
+  cursor:pointer;
+  user-select:none;
+  padding:18px 20px 22px;
+  min-width:140px;
+  max-width:190px;
+  opacity:0;
+  animation:scrape 0.4s ease forwards;
+}
+
+@keyframes scrape{
+  from{opacity:0;transform:translateY(8px) rotate(var(--rot,0deg));}
+  to{opacity:1;transform:translateY(0) rotate(var(--rot,0deg));}
+}
+
+.board-scrap::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:var(--paper-2);
+  border:1px solid rgba(160,130,90,0.3);
+  border-radius:1px;
+  box-shadow:2px 3px 10px rgba(80,55,20,0.13),0 1px 3px rgba(80,55,20,0.08);
+  z-index:-1;
+  transition:box-shadow 0.15s,background 0.15s;
+}
+
+.board-scrap:hover::before{
+  box-shadow:4px 6px 18px rgba(80,55,20,0.2),0 2px 6px rgba(80,55,20,0.1);
+  background:#f0e8d5;
+}
+
+.board-scrap.dragging::before{
+  box-shadow:8px 12px 32px rgba(80,55,20,0.25);
+}
+
+.scrap-label{
+  font-family:'Lora',serif;
+  font-style:italic;
+  font-size:14px;
+  color:var(--ink);
+  line-height:1.4;
+  margin-bottom:6px;
+}
+
+.scrap-count{
+  font-size:9px;
+  color:var(--ink-dim);
+  letter-spacing:0.08em;
+}
+
+.scrap-open{
+  font-size:9px;
+  color:var(--accent);
+  margin-top:8px;
+  letter-spacing:0.06em;
+  opacity:0;
+  transition:opacity 0.15s;
+}
+
+.board-scrap:hover .scrap-open{opacity:1;}
+
+/* TILES */
+.tile{
+  position:absolute;
+  cursor:grab;
+  user-select:none;
+  background:#fdf8f0;
+  border:1px solid rgba(160,130,90,0.28);
+  border-radius:2px;
+  max-width:300px;
+  opacity:0;
+  animation:tileIn 0.35s ease forwards;
+  box-shadow:3px 4px 12px rgba(80,55,20,0.13),0 1px 3px rgba(80,55,20,0.07);
+  transition:box-shadow 0.15s,border-color 0.15s;
+}
+
+@keyframes tileIn{
+  from{opacity:0;transform:translateY(10px) rotate(var(--rot,0deg));}
+  to{opacity:1;transform:translateY(0) rotate(var(--rot,0deg));}
+}
+
+.tile:hover{
+  box-shadow:5px 8px 20px rgba(80,55,20,0.18),0 2px 5px rgba(80,55,20,0.09);
+  border-color:rgba(160,130,90,0.5);
+}
+
+.tile.dragging{
+  cursor:grabbing;
+  box-shadow:10px 14px 36px rgba(80,55,20,0.28);
+  border-color:var(--accent);
+  z-index:9999!important;
+}
+
+.tile img{
+  display:block;
+  width:100%;
+  max-height:240px;
+  object-fit:cover;
+  border-radius:1px 1px 0 0;
+}
+
+.tile-cap{
+  padding:10px 12px 8px;
+  font-family:'Lora',serif;
+  font-style:italic;
+  font-size:12px;
+  color:var(--ink-mid);
+  line-height:1.5;
+}
+
+.tile-txt{
+  padding:16px;
+  font-family:'Lora',serif;
+  font-size:14px;
+  line-height:1.75;
+  color:var(--ink);
+  max-width:270px;
+}
+
+.tile-lnk{padding:13px 14px;}
+.tile-lnk-t{font-size:13px;color:var(--ink);margin-bottom:4px;line-height:1.4;font-family:'Lora',serif;}
+.tile-lnk-u{font-size:9px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;}
+
+.tile-foot{
+  padding:5px 12px 6px;
+  border-top:1px solid rgba(160,130,90,0.15);
+  font-size:8px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--ink-dim);
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="back" onclick="showBoards()">← boards</div>
+<div id="info"></div>
+
+<script>
+var ROOT='joy-at-large';
+var stage=document.getElementById('stage');
+var zMax=10,drag=null,ox=0,oy=0,didDrag=false;
+var scraps=[];
+
+function rnd(a,b){return Math.floor(Math.random()*(b-a))+a;}
+
+async function apiFetch(path){
+  var res=await fetch('/.netlify/functions/arena?path='+encodeURIComponent(path));
+  return res.json();
+}
+
+// drag
+document.addEventListener('mousemove',function(e){
+  if(!drag)return;
+  didDrag=true;
+  var r=stage.getBoundingClientRect();
+  drag.style.left=(e.clientX-r.left-ox)+'px';
+  drag.style.top=(e.clientY-r.top-oy)+'px';
+});
+document.addEventListener('mouseup',function(){
+  if(drag){drag.classList.remove('dragging');drag=null;}
+});
+
+function addDrag(el,onClick){
+  el.addEventListener('mousedown',function(e){
+    drag=el;didDrag=false;zMax++;
+    el.style.zIndex=zMax;el.classList.add('dragging');
+    var r=stage.getBoundingClientRect();
+    ox=e.clientX-r.left-parseFloat(el.style.left||0);
+    oy=e.clientY-r.top-parseFloat(el.style.top||0);
+    e.preventDefault();
+  });
+  if(onClick){
+    el.addEventListener('mouseup',function(){
+      if(!didDrag)onClick();
+    });
+  }
+}
+
+function clearStage(){
+  stage.innerHTML='';
+  scraps=[];
+}
+
+function showBoards(){
+  clearStage();
+  document.getElementById('back').style.display='none';
+  document.getElementById('info').style.display='none';
+  loadBoards();
+}
+
+function makeScrap(ch,index){
+  var el=document.createElement('div');
+  el.className='board-scrap';
+  var rot=(Math.random()-0.5)*8;
+  el.style.setProperty('--rot',rot+'deg');
+  el.style.animationDelay=(index*0.07)+'s';
+
+  var w=stage.offsetWidth, h=stage.offsetHeight;
+  el.style.left=rnd(w*0.05,w*0.75)+'px';
+  el.style.top=rnd(h*0.08,h*0.75)+'px';
+  el.style.zIndex=index+1;
+
+  el.innerHTML=
+    '<div class="scrap-label">'+ch.title+'</div>'+
+    '<div class="scrap-count">'+(ch.length||0)+' tiles</div>'+
+    '<div class="scrap-open">open board →</div>';
+
+  addDrag(el,function(){loadBoard(ch.slug,ch.title);});
+  stage.appendChild(el);
+  scraps.push(el);
+}
+
+function makeTile(block,index){
+  var el=document.createElement('tile');
+  el=document.createElement('div');
+  el.className='tile';
+  var rot=(Math.random()-0.5)*5;
+  el.style.setProperty('--rot',rot+'deg');
+  el.style.transform='rotate('+rot+'deg)';
+  el.style.animationDelay=(index*0.035)+'s';
+  el.style.zIndex=index+1;
+
+  var w=stage.offsetWidth,h=stage.offsetHeight;
+  el.style.left=rnd(20,Math.max(60,w-320))+'px';
+  el.style.top=rnd(20,Math.max(60,h-320))+'px';
+
+  var cls=block.class||'';
+
+  if(cls==='Image'&&block.image&&block.image.display&&block.image.display.url){
+    var img=document.createElement('img');
+    img.src=block.image.display.url;img.alt=block.title||'';img.loading='lazy';
+    el.appendChild(img);
+    if(block.title){
+      var c=document.createElement('div');c.className='tile-cap';c.textContent=block.title;el.appendChild(c);
+    }
+  }else if(cls==='Text'){
+    var t=document.createElement('div');t.className='tile-txt';
+    var ct=block.content||block.title||'';
+    t.textContent=ct.length>240?ct.slice(0,240)+'…':ct;
+    el.appendChild(t);
+  }else{
+    if(block.image&&block.image.display&&block.image.display.url){
+      var img2=document.createElement('img');img2.src=block.image.display.url;img2.alt='';img2.loading='lazy';el.appendChild(img2);
+    }
+    var d=document.createElement('div');d.className='tile-lnk';
+    var src=block.source&&block.source.url?'<div class="tile-lnk-u">'+block.source.url+'</div>':'';
+    d.innerHTML='<div class="tile-lnk-t">'+(block.title||cls||'—').slice(0,70)+'</div>'+src;
+    el.appendChild(d);
+  }
+
+  var foot=document.createElement('div');
+  foot.className='tile-foot';
+  foot.textContent=cls.toLowerCase();
+  el.appendChild(foot);
+
+  addDrag(el);
+  stage.appendChild(el);
+}
+
+async function loadBoards(){
+  stage.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:0.12em;color:var(--ink-dim);opacity:0.6">loading…</div>';
+  try{
+    var data=await apiFetch('/channels/'+ROOT+'?per=50');
+    var items=data.contents||[];
+    var boards=items.filter(function(b){return b.class==='Channel';});
+    stage.innerHTML='';
+    if(boards.length===0){
+      // no sub-channels, show tiles directly
+      loadBoard(ROOT,'');
+      return;
+    }
+    boards.forEach(function(ch,i){makeScrap(ch,i);});
+  }catch(e){
+    stage.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-dim)">could not load</div>';
+  }
+}
+
+async function loadBoard(slug,title){
+  stage.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:0.12em;color:var(--ink-dim);opacity:0.6">loading…</div>';
+  try{
+    var data=await apiFetch('/channels/'+slug+'?per=50');
+    var items=(data.contents||[]).filter(function(b){return b.class!=='Channel';});
+    stage.innerHTML='';
+    items.forEach(function(b,i){setTimeout(function(){makeTile(b,i);},i*30);});
+    setTimeout(function(){
+      document.getElementById('info').textContent=items.length+' tiles';
+      document.getElementById('info').style.display='block';
+    },items.length*30+100);
+    document.getElementById('back').style.display='block';
+  }catch(e){
+    stage.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-dim)">could not load</div>';
+  }
+}
+
+loadBoards();
+</script>
+</body>
+</html>  background:rgba(245,240,232,0.95);
   backdrop-filter:blur(8px);
   border-bottom:1px solid var(--border);
   display:flex;
