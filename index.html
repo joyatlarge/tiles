@@ -4,69 +4,383 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tiles</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400;1,500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --paper:#f4ede0;
-  --ink:#2a1f0e;
-  --ink-mid:#7a6a52;
-  --ink-dim:#b09a7a;
-  --accent:#8b6030;
-  --card:#fdf8f0;
-  --shadow:rgba(80,55,20,0.13);
-}
-html,body{height:100%;width:100%;overflow:hidden;background:var(--paper);font-family:'DM Mono',monospace;}
-#stage{position:fixed;inset:0;background:var(--paper);overflow:hidden;}
+html,body{height:100%;width:100%;overflow:hidden;background:#f4ede0;font-family:'DM Mono',monospace;}
 
-/* right panel — no visible border */
-#boards-panel{
-  position:fixed;top:0;right:0;bottom:0;width:180px;
-  padding:36px 18px 36px 0;
-  display:flex;flex-direction:column;gap:12px;align-items:flex-end;
+#stage{position:fixed;inset:0;background:#f4ede0;overflow:hidden;}
+
+/* right panel — invisible container, scraps float inside */
+#panel{
+  position:fixed;top:0;right:0;bottom:0;width:170px;
+  padding:40px 14px 40px 0;
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
   z-index:200;pointer-events:none;
   overflow-y:auto;
 }
-#boards-panel::-webkit-scrollbar{display:none;}
+#panel::-webkit-scrollbar{display:none;}
 
-.board-scrap{
-  pointer-events:all;cursor:pointer;user-select:none;
-  background:var(--card);
+.scrap{
+  pointer-events:all;
+  cursor:pointer;
+  background:#fdf8f0;
   border:1px solid rgba(160,130,90,0.3);
   border-radius:2px;
-  padding:11px 14px;
-  max-width:155px;
-  box-shadow:2px 3px 8px var(--shadow);
+  padding:10px 13px;
+  max-width:148px;
+  box-shadow:2px 3px 8px rgba(80,55,20,0.12);
+  font-family:'Lora',serif;
+  font-style:italic;
+  font-size:13px;
+  color:#2a1f0e;
+  line-height:1.4;
   transition:box-shadow 0.15s,transform 0.2s,background 0.15s,border-color 0.15s;
   transform:rotate(var(--rot,0deg));
 }
-.board-scrap:hover{
-  box-shadow:4px 6px 16px rgba(80,55,20,0.2);
+.scrap:hover{
+  box-shadow:4px 6px 14px rgba(80,55,20,0.2);
   background:#fffaf2;
-  transform:rotate(0deg) translateX(-4px);
+  transform:rotate(0deg) translateX(-3px);
 }
-.board-scrap.active{
-  background:#fffaf2;border-color:var(--accent);
-  box-shadow:4px 6px 16px rgba(80,55,20,0.2);
-  transform:rotate(0deg) translateX(-4px);
+.scrap.active{
+  background:#fffaf2;
+  border-color:#8b6030;
+  box-shadow:4px 6px 14px rgba(80,55,20,0.2);
+  transform:rotate(0deg) translateX(-3px);
 }
-.scrap-name{font-family:'Lora',serif;font-style:italic;font-size:13px;color:var(--ink);line-height:1.4;margin-bottom:3px;}
-.scrap-count{font-size:9px;color:var(--ink-dim);letter-spacing:0.07em;}
 
-/* scatter button — bottom right */
-#scatter-btn{
+/* scatter — bottom right, icon only */
+#scatter{
   position:fixed;bottom:22px;right:22px;z-index:300;
-  width:38px;height:38px;
-  background:var(--card);
+  width:36px;height:36px;border-radius:50%;
+  background:#fdf8f0;
   border:1px solid rgba(160,130,90,0.3);
-  border-radius:50%;
-  display:none;
+  box-shadow:2px 3px 8px rgba(80,55,20,0.12);
+  cursor:pointer;display:none;
   align-items:center;justify-content:center;
-  cursor:pointer;
-  box-shadow:2px 3px 8px var(--shadow);
-  transition:box-shadow 0.15s,background 0.15s,transform 0.2s;
+  transition:transform 0.25s,box-shadow 0.15s;
 }
-#scatter-btn:hover{
+#scatter:hover{transform:rotate(25deg);box-shadow:4px 6px 14px rgba(80,55,20,0.2);}
+
+/* tiles */
+.tile{
+  position:absolute;
+  cursor:grab;user-select:none;
+  background:#fdf8f0;
+  border:1px solid rgba(160,130,90,0.28);
+  border-radius:2px;
+  max-width:290px;
+  box-shadow:3px 4px 12px rgba(80,55,20,0.13),0 1px 3px rgba(80,55,20,0.07);
+  opacity:0;
+  animation:tileIn 0.35s ease forwards;
+}
+@keyframes tileIn{
+  from{opacity:0;transform:translateY(8px) rotate(var(--rot,0deg));}
+  to{opacity:1;transform:translateY(0) rotate(var(--rot,0deg));}
+}
+.tile:hover{box-shadow:5px 8px 20px rgba(80,55,20,0.18);}
+.tile.dragging{cursor:grabbing;box-shadow:10px 14px 36px rgba(80,55,20,0.25);border-color:#8b6030;z-index:9999!important;}
+
+.tile img{display:block;width:100%;max-height:240px;object-fit:cover;border-radius:1px 1px 0 0;}
+
+.tile-video{position:relative;width:270px;padding-bottom:56.25%;background:#1a1410;border-radius:1px 1px 0 0;overflow:hidden;}
+.tile-video iframe,.tile-video img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:none;}
+.tile-play-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+
+.tile-cap{padding:9px 12px 7px;font-family:'Lora',serif;font-style:italic;font-size:12px;color:#7a6a52;line-height:1.5;}
+.tile-txt{padding:15px;font-family:'Lora',serif;font-size:14px;line-height:1.75;color:#2a1f0e;max-width:260px;}
+.tile-lnk{padding:12px 14px;}
+.tile-lnk-t{font-size:13px;color:#2a1f0e;margin-bottom:3px;line-height:1.4;font-family:'Lora',serif;}
+.tile-lnk-u{font-size:9px;color:#b09a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;}
+.tile-foot{padding:5px 12px 6px;border-top:1px solid rgba(160,130,90,0.15);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#b09a7a;}
+
+#msg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:0.14em;color:#b09a7a;pointer-events:none;z-index:50;}
+@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+.blink{animation:blink 1.8s ease-in-out infinite;}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="panel"></div>
+<div id="scatter" onclick="doScatter()">
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="9" y1="9" x2="2.5" y2="2.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round"/>
+    <polyline points="2.5,5.5 2.5,2.5 5.5,2.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <line x1="9" y1="9" x2="15.5" y2="2.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round"/>
+    <polyline points="12.5,2.5 15.5,2.5 15.5,5.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <line x1="9" y1="9" x2="2.5" y2="15.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round"/>
+    <polyline points="2.5,12.5 2.5,15.5 5.5,15.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <line x1="9" y1="9" x2="15.5" y2="15.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round"/>
+    <polyline points="12.5,15.5 15.5,15.5 15.5,12.5" stroke="#8b6030" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+</div>
+<div id="msg"><span class="blink">loading…</span></div>
+
+<script>
+var ROOT = 'joy-at-large';
+var stage = document.getElementById('stage');
+var panel = document.getElementById('panel');
+var scatter = document.getElementById('scatter');
+var msg = document.getElementById('msg');
+var zMax = 10, drag = null, ox = 0, oy = 0;
+var allBoards = [];
+var activeScrap = null;
+
+function rnd(a,b){ return Math.floor(Math.random()*(b-a))+a; }
+function rndf(a,b){ return Math.random()*(b-a)+a; }
+
+async function api(path){
+  var res = await fetch('/.netlify/functions/arena?path=' + encodeURIComponent(path));
+  if(!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+document.addEventListener('mousemove', function(e){
+  if(!drag) return;
+  var rect = stage.getBoundingClientRect();
+  drag.style.left = (e.clientX - rect.left - ox) + 'px';
+  drag.style.top  = (e.clientY - rect.top  - oy) + 'px';
+});
+document.addEventListener('mouseup', function(){
+  if(drag){ drag.classList.remove('dragging'); drag = null; }
+});
+
+function enableDrag(el){
+  el.addEventListener('mousedown', function(e){
+    if(e.target.tagName === 'IFRAME') return;
+    drag = el; zMax++;
+    el.style.zIndex = zMax;
+    el.classList.add('dragging');
+    var r = el.getBoundingClientRect();
+    var sr = stage.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    e.preventDefault();
+  });
+}
+
+function clearTiles(){
+  stage.querySelectorAll('.tile').forEach(function(t){ t.remove(); });
+}
+
+function doScatter(){
+  var tiles = stage.querySelectorAll('.tile');
+  var maxX = window.innerWidth - 200;
+  tiles.forEach(function(el){
+    el.style.transition = 'left 0.45s cubic-bezier(.25,.8,.25,1), top 0.45s cubic-bezier(.25,.8,.25,1)';
+    el.style.left = rnd(20, Math.max(60, maxX - 290)) + 'px';
+    el.style.top  = rnd(20, Math.max(60, window.innerHeight - 300)) + 'px';
+    setTimeout(function(){ el.style.transition = ''; }, 500);
+  });
+}
+
+function getVid(url){
+  if(!url) return null;
+  var y = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  if(y) return { type:'youtube', id:y[1] };
+  var v = url.match(/vimeo\.com\/(\d+)/);
+  if(v) return { type:'vimeo', id:v[1] };
+  return null;
+}
+
+function makeTile(block, idx){
+  var el = document.createElement('div');
+  el.className = 'tile';
+  var rot = rndf(-4, 4);
+  el.style.setProperty('--rot', rot+'deg');
+  el.style.transform = 'rotate('+rot+'deg)';
+  el.style.animationDelay = (idx * 0.04) + 's';
+  el.style.zIndex = idx + 1;
+
+  var maxX = window.innerWidth - 200; // leave space for panel
+  el.style.left = rnd(20, Math.max(60, maxX - 290)) + 'px';
+  el.style.top  = rnd(20, Math.max(60, window.innerHeight - 300)) + 'px';
+
+  var cls = block.class || '';
+  var label = cls.toLowerCase();
+
+  if(cls === 'Image' && block.image && block.image.display && block.image.display.url){
+    label = 'scene';
+    var img = document.createElement('img');
+    img.src = block.image.display.url;
+    img.alt = block.title || '';
+    img.loading = 'lazy';
+    el.appendChild(img);
+    if(block.title){
+      var cap = document.createElement('div');
+      cap.className = 'tile-cap';
+      cap.textContent = block.title;
+      el.appendChild(cap);
+    }
+
+  } else if(cls === 'Media'){
+    label = 'play';
+    var srcUrl = (block.source && block.source.url) || '';
+    var vid = getVid(srcUrl);
+    var vw = document.createElement('div');
+    vw.className = 'tile-video';
+    vw.style.width = '270px';
+
+    if(block.image && block.image.display && block.image.display.url){
+      var th = document.createElement('img');
+      th.src = block.image.display.url;
+      th.alt = '';
+      vw.appendChild(th);
+      if(vid){
+        var pi = document.createElement('div');
+        pi.className = 'tile-play-icon';
+        pi.innerHTML = '<svg viewBox="0 0 52 52" width="44" height="44"><circle cx="26" cy="26" r="26" fill="rgba(244,237,224,0.88)"/><polygon points="20,15 40,26 20,37" fill="#2a1f0e"/></svg>';
+        vw.appendChild(pi);
+        vw.style.cursor = 'pointer';
+        vw.addEventListener('mouseenter', function(){
+          if(!vid) return;
+          var src = vid.type === 'youtube'
+            ? 'https://www.youtube.com/embed/'+vid.id+'?autoplay=1&rel=0'
+            : 'https://player.vimeo.com/video/'+vid.id+'?autoplay=1';
+          var iframe = document.createElement('iframe');
+          iframe.src = src;
+          iframe.allow = 'autoplay; fullscreen';
+          vw.innerHTML = '';
+          vw.appendChild(iframe);
+        });
+      }
+    } else {
+      vw.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(244,237,224,0.3);font-size:10px;letter-spacing:0.1em">video</div>';
+    }
+    el.appendChild(vw);
+
+  } else if(cls === 'Text'){
+    label = 'text';
+    var t = document.createElement('div');
+    t.className = 'tile-txt';
+    var ct = block.content || block.title || '';
+    t.textContent = ct.length > 240 ? ct.slice(0,240)+'…' : ct;
+    el.appendChild(t);
+
+  } else if(cls === 'Link'){
+    label = 'link';
+    if(block.image && block.image.display && block.image.display.url){
+      var li = document.createElement('img');
+      li.src = block.image.display.url;
+      li.alt = ''; li.loading = 'lazy';
+      li.style.maxHeight = '160px';
+      el.appendChild(li);
+    }
+    var ld = document.createElement('div'); ld.className = 'tile-lnk';
+    ld.innerHTML = '<div class="tile-lnk-t">'+(block.title||'link').slice(0,70)+'</div>'
+      + (block.source&&block.source.url ? '<div class="tile-lnk-u">'+block.source.url+'</div>' : '');
+    el.appendChild(ld);
+
+  } else {
+    var od = document.createElement('div'); od.className = 'tile-lnk';
+    od.innerHTML = '<div class="tile-lnk-t">'+(block.title||'—').slice(0,70)+'</div>';
+    el.appendChild(od);
+  }
+
+  var foot = document.createElement('div');
+  foot.className = 'tile-foot';
+  foot.textContent = label;
+  el.appendChild(foot);
+
+  enableDrag(el);
+  stage.appendChild(el);
+}
+
+function setMsg(html){ msg.style.display='flex'; msg.innerHTML=html; }
+function hideMsg(){ msg.style.display='none'; }
+
+async function loadBoard(slug, scrapEl){
+  clearTiles();
+  scatter.style.display = 'none';
+  if(activeScrap) activeScrap.classList.remove('active');
+  activeScrap = scrapEl;
+  if(scrapEl) scrapEl.classList.add('active');
+  setMsg('<span class="blink">loading…</span>');
+  try{
+    var data = await api('/channels/'+slug+'?per=50');
+    var items = (data.contents||[]).filter(function(b){ return b.class !== 'Channel'; });
+    hideMsg();
+    items.sort(function(){ return Math.random()-0.5; });
+    items.forEach(function(b,i){ setTimeout(function(){ makeTile(b,i); }, i*40); });
+    setTimeout(function(){ scatter.style.display='flex'; }, items.length*40+200);
+  } catch(e){
+    setMsg('<span style="color:#8b6030;font-size:11px">could not load</span>');
+    console.error(e);
+  }
+}
+
+async function loadAll(scrapEl){
+  clearTiles();
+  scatter.style.display = 'none';
+  if(activeScrap) activeScrap.classList.remove('active');
+  activeScrap = scrapEl;
+  if(scrapEl) scrapEl.classList.add('active');
+  setMsg('<span class="blink">loading all…</span>');
+  try{
+    var all = [];
+    await Promise.all(allBoards.map(function(ch){
+      return api('/channels/'+ch.slug+'?per=50').then(function(d){
+        var items = (d.contents||[]).filter(function(b){ return b.class !== 'Channel'; });
+        all = all.concat(items);
+      }).catch(function(){});
+    }));
+    hideMsg();
+    all.sort(function(){ return Math.random()-0.5; });
+    all.forEach(function(b,i){ setTimeout(function(){ makeTile(b,i); }, i*30); });
+    setTimeout(function(){ scatter.style.display='flex'; }, all.length*30+200);
+  } catch(e){
+    setMsg('<span style="color:#8b6030;font-size:11px">could not load</span>');
+    console.error(e);
+  }
+}
+
+async function init(){
+  setMsg('<span class="blink">loading…</span>');
+  try{
+    var data = await api('/channels/'+ROOT+'?per=50');
+    var channels = (data.contents||[]).filter(function(b){ return b.class === 'Channel'; });
+    allBoards = channels;
+
+    // build panel
+    panel.innerHTML = '';
+    var rots = [1, -1.5, 0.5, -1, 2, -0.5, 1.5, -2, 0, 1];
+
+    // All scrap
+    var allScrap = document.createElement('div');
+    allScrap.className = 'scrap';
+    allScrap.style.setProperty('--rot', '1deg');
+    allScrap.textContent = 'All';
+    allScrap.onclick = function(){ loadAll(allScrap); };
+    panel.appendChild(allScrap);
+
+    channels.forEach(function(ch, i){
+      var s = document.createElement('div');
+      s.className = 'scrap';
+      s.style.setProperty('--rot', rots[i % rots.length] + 'deg');
+      s.textContent = ch.title;
+      s.onclick = function(){ loadBoard(ch.slug, s); };
+      panel.appendChild(s);
+    });
+
+    // auto-load first board
+    if(channels.length > 0){
+      var firstScrap = panel.querySelectorAll('.scrap')[1];
+      loadBoard(channels[0].slug, firstScrap);
+    } else {
+      loadBoard(ROOT, null);
+    }
+
+  } catch(e){
+    setMsg('<span style="color:#8b6030">could not load</span>');
+    console.error(e);
+  }
+}
+
+init();
+</script>
+</body>
+</html>#scatter-btn:hover{
   box-shadow:4px 6px 14px rgba(80,55,20,0.2);
   background:#fffaf2;
   transform:rotate(20deg);
