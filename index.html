@@ -3,70 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tiles</title>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<title>Joy at Large</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;width:100%;overflow:hidden;background:#f4ede0;font-family:'DM Mono',monospace;}
+:root{--bg:#0e0e0e;--surface:#161616;--border:rgba(255,255,255,0.08);--bh:rgba(255,255,255,0.18);--text:#e8e4dd;--muted:#666;--dim:#444;--accent:#c8b89a;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;overflow:hidden;}
+#topbar{position:fixed;top:0;left:0;right:0;height:44px;background:rgba(14,14,14,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;font-size:11px;letter-spacing:0.08em;}
+#tl{display:flex;align-items:center;gap:16px;}
+#logo{color:var(--accent);}
+#clabel{color:var(--muted);}
+#tr{display:flex;align-items:center;gap:12px;}
+#bcount{color:var(--dim);font-size:10px;}
+.btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;cursor:pointer;border-radius:3px;}
+.btn:hover{border-color:var(--bh);color:var(--text);}
+#canvas{position:fixed;inset:44px 0 0 0;overflow:hidden;}
+#canvas::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:40px 40px;}
+#msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:40px;}
+.loading{font-size:11px;letter-spacing:0.1em;color:var(--dim);animation:blink 1.8s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+.block{position:absolute;cursor:grab;user-select:none;border:1px solid var(--border);border-radius:4px;background:var(--surface);max-width:230px;opacity:0;animation:fi 0.4s ease forwards;}
+@keyframes fi{to{opacity:1;}}
+.block:hover{border-color:var(--bh);}
+.block.dragging{cursor:grabbing;border-color:var(--accent);z-index:9999!important;}
+.block img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:3px 3px 0 0;}
+.bcap{padding:8px 10px;font-size:10px;color:var(--muted);line-height:1.5;}
+.btxt{padding:14px;font-family:'EB Garamond',serif;font-size:13px;line-height:1.7;color:var(--text);max-width:210px;}
+.blnk{padding:11px 13px;}
+.blt{font-size:11px;color:var(--text);margin-bottom:4px;line-height:1.4;}
+.blu{font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.btag{padding:4px 10px 5px;border-top:1px solid var(--border);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div id="tl"><span id="logo">⬡</span><span id="clabel">joy at large</span></div>
+  <div id="tr">
+    <span id="bcount"></span>
+    <button class="btn" id="scatbtn" style="display:none" onclick="scatter()">scatter</button>
+  </div>
+</div>
+<div id="canvas"><div id="msg"><span class="loading">loading…</span></div></div>
+<script>
+var SLUG='joy-at-large';
+var zMax=10,drag=null,ox=0,oy=0;
+var canvas=document.getElementById('canvas');
+function rnd(a,b){return Math.floor(Math.random()*(b-a))+a;}
+function showMsg(h){canvas.innerHTML='<div id="msg">'+h+'</div>';}
 
-#stage{position:fixed;inset:0;background:#f4ede0;overflow:hidden;}
-
-/* right panel — invisible container, scraps float inside */
-#panel{
-  position:fixed;top:0;right:0;bottom:0;width:170px;
-  padding:40px 14px 40px 0;
-  display:flex;flex-direction:column;align-items:flex-end;gap:10px;
-  z-index:200;pointer-events:none;
-  overflow-y:auto;
-}
-#panel::-webkit-scrollbar{display:none;}
-
-.scrap{
-  pointer-events:all;
-  cursor:pointer;
-  background:#fdf8f0;
-  border:1px solid rgba(160,130,90,0.3);
-  border-radius:2px;
-  padding:10px 13px;
-  max-width:148px;
-  box-shadow:2px 3px 8px rgba(80,55,20,0.12);
-  font-family:'Lora',serif;
-  font-style:italic;
-  font-size:13px;
-  color:#2a1f0e;
-  line-height:1.4;
-  transition:box-shadow 0.15s,transform 0.2s,background 0.15s,border-color 0.15s;
-  transform:rotate(var(--rot,0deg));
-}
-.scrap:hover{
-  box-shadow:4px 6px 14px rgba(80,55,20,0.2);
-  background:#fffaf2;
-  transform:rotate(0deg) translateX(-3px);
-}
-.scrap.active{
-  background:#fffaf2;
-  border-color:#8b6030;
-  box-shadow:4px 6px 14px rgba(80,55,20,0.2);
-  transform:rotate(0deg) translateX(-3px);
+async function load(){
+  showMsg('<span class="loading">loading blocks…</span>');
+  try{
+    var res=await fetch('/.netlify/functions/arena?path='+encodeURIComponent('/channels/'+SLUG+'?per=50'));
+    var data=await res.json();
+    var items=data.contents||data.data||[];
+    canvas.innerHTML='';
+    document.getElementById('bcount').textContent=items.length+' blocks';
+    document.getElementById('scatbtn').style.display='inline-block';
+    items.sort(function(){return Math.random()-0.5;});
+    items.forEach(function(b,i){setTimeout(function(){makeBlock(b,i);},i*30);});
+  }catch(err){
+    showMsg('<span style="color:#c06060;font-size:11px">Could not load blocks.<br><span style="color:#444;font-size:10px">'+err.message+'</span></span>');
+  }
 }
 
-/* scatter — bottom right, icon only */
-#scatter{
-  position:fixed;bottom:22px;right:22px;z-index:300;
-  width:36px;height:36px;border-radius:50%;
-  background:#fdf8f0;
-  border:1px solid rgba(160,130,90,0.3);
-  box-shadow:2px 3px 8px rgba(80,55,20,0.12);
-  cursor:pointer;display:none;
-  align-items:center;justify-content:center;
-  transition:transform 0.25s,box-shadow 0.15s;
+function makeBlock(block,index){
+  var el=document.createElement('div');
+  el.className='block';
+  el.style.zIndex=index+1;
+  el.style.animationDelay=(index*0.03)+'s';
+  el.style.left=rnd(20,Math.max(40,canvas.offsetWidth-260))+'px';
+  el.style.top=rnd(20,Math.max(40,canvas.offsetHeight-260))+'px';
+  el.style.transform='rotate('+(Math.random()-0.5)*5+'deg)';
+  var cls=block.class||block.type||'';
+  if(cls==='Image'&&block.image&&block.image.display&&block.image.display.url){
+    var img=document.createElement('img');
+    img.src=block.image.display.url;img.alt=block.title||'';img.loading='lazy';
+    el.appendChild(img);
+    if(block.title){var c=document.createElement('div');c.className='bcap';c.textContent=block.title;el.appendChild(c);}
+  }else if(cls==='Text'){
+    var t=document.createElement('div');t.className='btxt';
+    var c=block.content||block.title||'';
+    t.textContent=c.length>220?c.slice(0,220)+'…':c;
+    el.appendChild(t);
+  }else{
+    if(block.image&&block.image.display&&block.image.display.url){
+      var img2=document.createElement('img');img2.src=block.image.display.url;img2.alt=block.title||'';img2.loading='lazy';el.appendChild(img2);
+    }
+    var d=document.createElement('div');d.className='blnk';
+    var src=block.source&&block.source.url?'<div class="blu">'+block.source.url+'</div>':'';
+    d.innerHTML='<div class="blt">'+(block.title||cls||'Block').slice(0,70)+'</div>'+src;
+    el.appendChild(d);
+  }
+  var tag=document.createElement('div');tag.className='btag';tag.textContent=cls;
+  el.appendChild(tag);
+  el.addEventListener('mousedown',function(e){
+    drag=el;zMax++;el.style.zIndex=zMax;el.classList.add('dragging');
+    var r=el.getBoundingClientRect(),cr=canvas.getBoundingClientRect();
+    ox=e.clientX-r.left;oy=e.clientY-r.top;e.preventDefault();
+  });
+  canvas.appendChild(el);
 }
-#scatter:hover{transform:rotate(25deg);box-shadow:4px 6px 14px rgba(80,55,20,0.2);}
-
-/* tiles */
-.tile{
-  position:absolute;
-  cursor:grab;user-select:none;
+document.addEventListener('mousemove',function(e){
+  if(!drag)return;
+  var cr=canvas.getBoundingClientRect();
+  drag.style.left=(e.clientX-cr.left-ox)+'px';
+  drag.style.top=(e.clientY-cr.top-oy)+'px';
+});
+document.addEventListener('mouseup',function(){if(drag){drag.classList.remove('dragging');drag=null;}});
+function scatter(){
+  var cw=canvas.offsetWidth,ch=canvas.offsetHeight;
+  document.querySelectorAll('.block').forEach(function(el){
+    el.style.transition='left 0.4s ease, top 0.4s ease';
+    el.style.left=rnd(20,Math.max(40,cw-260))+'px';
+    el.style.top=rnd(20,Math.max(40,ch-260))+'px';
+    setTimeout(function(){el.style.transition='';},450);
+  });
+}
+load();
+</script>
+</body>
+</html>  cursor:grab;user-select:none;
   background:#fdf8f0;
   border:1px solid rgba(160,130,90,0.28);
   border-radius:2px;
