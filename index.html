@@ -178,11 +178,12 @@ html, body {
 
 /* Collect prompt */
 #collect-prompt {
-  position: fixed; bottom: 150px; right: 18px;
+  position: fixed; bottom: 20px; right: 20px;
   font-size: 9px; letter-spacing: 0.12em;
-  color: rgba(42,31,14,0.3); text-align: right;
+  color: rgba(42,31,14,0.45); text-align: right;
   z-index: 320; pointer-events: none;
   opacity: 0; transition: opacity 0.15s;
+  font-family: 'DM Mono', monospace;
 }
 #collect-prompt.visible  { opacity: 1; }
 #collect-prompt.sure     { color: #8b6030; font-style: italic; pointer-events: all; cursor: none; }
@@ -217,15 +218,27 @@ html, body {
 }
 #draw-lightbox.open { display: flex; }
 #draw-card {
-  width: 280px; background: #fdf8f0; border-radius: 2px;
-  padding: 48px 40px; text-align: center;
+  width: 420px; background: #fdf8f0; border-radius: 2px;
+  padding: 56px 52px 48px; text-align: center;
   box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+  position: relative;
 }
+/* Playing card corner flourishes */
+#draw-card::before,
+#draw-card::after {
+  content: '🀄';
+  position: absolute;
+  font-size: 16px;
+  opacity: 0.18;
+  line-height: 1;
+}
+#draw-card::before { top: 14px; left: 16px; }
+#draw-card::after  { bottom: 14px; right: 16px; transform: rotate(180deg); }
 #draw-presents { font-size: 9px; color: #b09a7a; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 8px; }
-#draw-title { font-family: 'Lora', serif; font-style: italic; font-size: 26px; color: #2a1f0e; margin-bottom: 28px; }
+#draw-title { font-family: 'Lora', serif; font-style: italic; font-size: 34px; color: #2a1f0e; margin-bottom: 32px; letter-spacing: 0.01em; }
 #draw-divider { width: 32px; height: 1px; background: rgba(160,130,90,0.3); margin: 0 auto 22px; }
 #draw-thumbs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 14px; }
-.draw-thumb { width: 64px; height: 46px; border-radius: 1px; object-fit: cover; }
+.draw-thumb { width: 80px; height: 58px; border-radius: 1px; object-fit: cover; }
 #draw-count { font-size: 9px; color: #b09a7a; letter-spacing: 0.1em; margin-bottom: 20px; }
 #draw-again { font-size: 9px; letter-spacing: 0.12em; color: rgba(42,31,14,0.28); cursor: none; transition: color 0.15s; }
 #draw-again:hover { color: rgba(42,31,14,0.6); }
@@ -291,6 +304,7 @@ var currentSlug = null, activeScrap = null, allBoards = [];
 var held = [];
 var cpState = 0;
 var phraseTimer = null, phraseIdx = 0;
+var firstLoad = true;
 
 // ── Cursor ───────────────────────────────────────────────
 document.addEventListener('mousemove', function(e) {
@@ -323,6 +337,8 @@ function palmCentre() {
 
 // ── Loading phrases ──────────────────────────────────────
 function showPhrases(onDone) {
+  if (!firstLoad) { if (onDone) onDone(); return; }
+  firstLoad = false;
   msg.style.display = 'flex';
   phraseIdx = 0;
   function next() {
@@ -437,8 +453,8 @@ function renderMinis() {
     var card = document.createElement('div');
     card.className = 'mini-tile';
     var angle  = (i - (n - 1) / 2) * 10;
-    card.style.right  = (window.innerWidth  - pr.right + 60 + (n - 1 - i) * 10) + 'px';
-    card.style.bottom = (window.innerHeight - pr.bottom + 80 + i * 3) + 'px';
+    card.style.right  = (window.innerWidth  - pr.right + 18 + (n - 1 - i) * 12) + 'px';
+    card.style.bottom = (window.innerHeight - pr.bottom + 16 + i * 2) + 'px';
     card.style.transform = 'rotate(' + angle + 'deg)';
     card.style.zIndex    = 295 + i;
     if (d.imgSrc) {
@@ -585,6 +601,7 @@ function makeTile(block, idx) {
   var el  = document.createElement('div');
   var rot = rndf(-4, 4);
   var a   = tileArea();
+  el.id = 'tile-' + Date.now() + '-' + idx;
   el.className = 'tile';
   el.style.setProperty('--rot', rot + 'deg');
   el.style.transform      = 'rotate(' + rot + 'deg)';
